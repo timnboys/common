@@ -1,27 +1,27 @@
-
 package permission
 
 import (
 	"errors"
+	"github.com/rxdn/gdl/gateway"
 	"github.com/rxdn/gdl/objects/channel"
 	"github.com/rxdn/gdl/objects/guild"
-	"github.com/rxdn/gdl/permission"
+	"github.com/sirupsen/logrus"
 )
 
-func HasPermissionsChannel(retriever Retriever, guildId, userId, channelId uint64, permissions ...permission.Permission) bool {
-	uint64(sum), err := GetEffectivePermissionsChannel(retriever, guildId, userId, channelId)
+func HasPermissionsChannel(shard *gateway.Shard, guildId, userId, channelId uint64, permissions ...Permission) bool {
+	sum, err := GetEffectivePermissionsChannel(shard, guildId, userId, channelId)
 	if err != nil {
 		return false
 	}
 
-	if permission.HasPermissionRaw(sum, permission.Administrator) {
+	if HasPermissionRaw(sum, Administrator) {
 		return true
 	}
 
 	hasPermission := true
 
-	for _, perm := range permissions {
-		if !permission.HasPermissionRaw(sum, perm) {
+	for _, permission := range permissions {
+		if !HasPermissionRaw(sum, permission) {
 			hasPermission = false
 			break
 		}
@@ -30,20 +30,20 @@ func HasPermissionsChannel(retriever Retriever, guildId, userId, channelId uint6
 	return hasPermission
 }
 
-func HasPermissions(retriever Retriever, guildId, userId uint64, permissions ...permission.Permission) bool {
-	sum, err := GetEffectivePermissions(retriever, guildId, userId)
+func HasPermissions(shard *gateway.Shard, guildId, userId uint64, permissions ...Permission) bool {
+	sum, err := GetEffectivePermissions(shard, guildId, userId)
 	if err != nil {
 		return false
 	}
 
-	if permission.HasPermissionRaw(sum, permission.Administrator) {
+	if HasPermissionRaw(sum, Administrator) {
 		return true
 	}
 
 	hasPermission := true
 
-	for _, perm := range permissions {
-		if !permission.HasPermissionRaw(sum, perm) {
+	for _, permission := range permissions {
+		if !HasPermissionRaw(sum, permission) {
 			hasPermission = false
 			break
 		}
@@ -52,62 +52,70 @@ func HasPermissions(retriever Retriever, guildId, userId uint64, permissions ...
 	return hasPermission
 }
 
-func GetAllPermissionsChannel(retriever Retriever, guildId, userId, channelId uint64) []permission.Permission {
-	permissions := make([]permission.Permission, 0)
+func GetAllPermissionsChannel(shard *gateway.Shard, guildId, userId, channelId uint64) []Permission {
+	permissions := make([]Permission, 0)
 
-	sum, err := GetEffectivePermissionsChannel(retriever, guildId, userId, channelId)
+	sum, err := GetEffectivePermissionsChannel(shard, guildId, userId, channelId)
 	if err != nil {
+		if shard.ShardManager.ShardOptions.Debug {
+			logrus.Infof("shard %d: error retrieving permissions: %s", shard.ShardId, err.Error())
+		}
+
 		return permissions
 	}
 
-	for _, perm := range permission.AllPermissions {
-		if permission.HasPermissionRaw(sum, perm) {
-			permissions = append(permissions, perm)
+	for _, permission := range AllPermissions {
+		if HasPermissionRaw(sum, permission) {
+			permissions = append(permissions, permission)
 		}
 	}
 
 	return permissions
 }
 
-func GetAllPermissions(retriever Retriever, guildId, userId uint64) []permission.Permission {
-	permissions := make([]permission.Permission, 0)
+func GetAllPermissions(shard *gateway.Shard, guildId, userId uint64) []Permission {
+	permissions := make([]Permission, 0)
 
-	sum, err := GetEffectivePermissions(retriever, guildId, userId)
+	sum, err := GetEffectivePermissions(shard, guildId, userId)
 	if err != nil {
+		if shard.ShardManager.ShardOptions.Debug {
+			logrus.Infof("shard %d: error retrieving permissions: %s", shard.ShardId, err.Error())
+		}
+
 		return permissions
 	}
 
-	for _, perm := range permission.AllPermissions {
-		if permission.HasPermissionRaw(sum, perm) {
-			permissions = append(permissions, perm)
+	for _, permission := range AllPermissions {
+		if HasPermissionRaw(sum, permission) {
+			permissions = append(permissions, permission)
 		}
 	}
 
 	return permissions
 }
 
-func GetEffectivePermissionsChannel(retriever Retriever, guildId, userId, channelId uint64) (uint64, error) {
-	permissions, err := GetBasePermissions(retriever, guildId)
+func GetEffectivePermissionsChannel(shard *gateway.Shard, guildId, userId, channelId uint64) (uint64, error) {
+	permissions, err := GetBasePermissions(shard, guildId)
 	if err != nil {
 		return 0, err
 	}
 
-	permissions, err = GetGuildTotalRolePermissions(retriever, guildId, userId, permissions)
+	permissions, err = GetGuildTotalRolePermissions(shard, guildId, userId, permissions)
 	if err != nil {
 		return 0, err
 	}
 
-	permissions, err = GetChannelBasePermissions(retriever, guildId, channelId, permissions)
+	permissions, err = GetChannelBasePermissions(shard, guildId, channelId, permissions)
 	if err != nil {
 		return 0, err
 	}
 
-	permissions, err = GetChannelTotalRolePermissions(retriever, guildId, userId, channelId, permissions)
+	permissions, err = GetChannelTotalRolePermissions(shard, guildId, userId, channelId, permissions)
 	if err != nil {
 		return 0, err
 	}
 
-	permissions, err = GetChannelMemberPermissions(retriever, userId, channelId, permissions)
+	permissions, err = GetChannelMemberPermissions(shard, userId, channelId, permissions)
 	if err != nil {
 		return 0, err
 	}
@@ -115,13 +123,13 @@ func GetEffectivePermissionsChannel(retriever Retriever, guildId, userId, channe
 	return permissions, nil
 }
 
-func GetEffectivePermissions(retriever Retriever, guildId, userId uint64) (uint64, error) {
-	permissions, err := GetBasePermissions(retriever, guildId)
+func GetEffectivePermissions(shard *gateway.Shard, guildId, userId uint64) (uint64, error) {
+	permissions, err := GetBasePermissions(shard, guildId)
 	if err != nil {
 		return 0, err
 	}
 
-	permissions, err = GetGuildTotalRolePermissions(retriever, guildId, userId, permissions)
+	permissions, err = GetGuildTotalRolePermissions(shard, guildId, userId, permissions)
 	if err != nil {
 		return 0, err
 	}
@@ -129,8 +137,8 @@ func GetEffectivePermissions(retriever Retriever, guildId, userId uint64) (uint6
 	return permissions, nil
 }
 
-func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, initialPermissions uint64) (uint64, error) {
-	ch, err := retriever.GetChannel(channelId)
+func GetChannelMemberPermissions(shard *gateway.Shard, userId, channelId uint64, initialPermissions uint64) (uint64, error) {
+	ch, err := shard.GetChannel(channelId)
 	if err != nil {
 		return 0, err
 	}
@@ -145,18 +153,18 @@ func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, 
 	return initialPermissions, nil
 }
 
-func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channelId uint64, initialPermissions uint64) (uint64, error) {
-	member, err := retriever.GetGuildMember(guildId, userId)
+func GetChannelTotalRolePermissions(shard *gateway.Shard, guildId, userId, channelId uint64, initialPermissions uint64) (uint64, error) {
+	member, err := shard.GetGuildMember(guildId, userId)
 	if err != nil {
 		return 0, err
 	}
 
-	roles, err := retriever.GetGuildRoles(guildId)
+	roles, err := shard.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
 	}
 
-	ch, err := retriever.GetChannel(channelId)
+	ch, err := shard.GetChannel(channelId)
 	if err != nil {
 		return 0, err
 	}
@@ -183,8 +191,8 @@ func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channe
 	return initialPermissions, nil
 }
 
-func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, initialPermissions uint64) (uint64, error) {
-	roles, err := retriever.GetGuildRoles(guildId)
+func GetChannelBasePermissions(shard *gateway.Shard, guildId, channelId uint64, initialPermissions uint64) (uint64, error) {
+	roles, err := shard.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
 	}
@@ -201,7 +209,7 @@ func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, i
 		return 0, errors.New("couldn't find public role")
 	}
 
-	ch, err := retriever.GetChannel(channelId)
+	ch, err := shard.GetChannel(channelId)
 	if err != nil {
 		return 0, err
 	}
@@ -217,13 +225,13 @@ func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, i
 	return initialPermissions, nil
 }
 
-func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, initialPermissions uint64) (uint64, error) {
-	member, err := retriever.GetGuildMember(guildId, userId)
+func GetGuildTotalRolePermissions(shard *gateway.Shard, guildId, userId uint64, initialPermissions uint64) (uint64, error) {
+	member, err := shard.GetGuildMember(guildId, userId)
 	if err != nil {
 		return 0, err
 	}
 
-	uint64(roles), err := retriever.GetGuildRoles(guildId)
+	roles, err := shard.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
 	}
@@ -239,8 +247,8 @@ func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, i
 	return initialPermissions, nil
 }
 
-func GetBasePermissions(retriever Retriever, guildId uint64) (uint64, error) {
-	uint64(roles), err := retriever.GetGuildRoles(guildId)
+func GetBasePermissions(shard *gateway.Shard, guildId uint64) (uint64, error) {
+	roles, err := shard.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
 	}
