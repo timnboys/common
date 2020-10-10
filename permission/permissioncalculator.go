@@ -128,7 +128,7 @@ func GetEffectivePermissions(retriever Retriever, guildId, userId uint64) (int, 
 	return permissions, nil
 }
 
-func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, initialPermissions uint64) (int, error) {
+func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, initialPermissions int) (int, error) {
 	ch, err := retriever.GetChannel(channelId)
 	if err != nil {
 		return 0, err
@@ -144,7 +144,7 @@ func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, 
 	return initialPermissions, nil
 }
 
-func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channelId uint64, initialPermissions uint64) (int, error) {
+func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channelId uint64, initialPermissions int) (int, error) {
 	member, err := retriever.GetGuildMember(guildId, userId)
 	if err != nil {
 		return 0, err
@@ -160,7 +160,7 @@ func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channe
 		return 0, err
 	}
 
-	var allow, deny uint64
+	allow, deny := 0, 0
 
 	for _, memberRole := range member.Roles {
 		for _, role := range roles {
@@ -182,7 +182,7 @@ func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channe
 	return initialPermissions, nil
 }
 
-func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, initialPermissions uint64) (int, error) {
+func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, initialPermissions int) (int, error) {
 	roles, err := retriever.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
@@ -216,7 +216,7 @@ func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, i
 	return initialPermissions, nil
 }
 
-func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, initialPermissions uint64) (int, error) {
+func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, initialPermissions int) (int, error) {
 	member, err := retriever.GetGuildMember(guildId, userId)
 	if err != nil {
 		return 0, err
@@ -258,4 +258,3 @@ func GetBasePermissions(retriever Retriever, guildId uint64) (int, error) {
 
 	return publicRole.Permissions, nil
 }
-
