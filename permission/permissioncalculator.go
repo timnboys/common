@@ -12,15 +12,18 @@ func HasPermissionsChannel(retriever Retriever, guildId, userId, channelId uint6
 	if err != nil {
 		return false
 	}
+	
+	u := uint16(sum)
+	u1 := uint64(u)
 
-	if permission.HasPermissionRaw(sum, permission.Administrator) {
+	if permission.HasPermissionRaw(uint64(u1), permission.Administrator) {
 		return true
 	}
 
 	hasPermission := true
 
 	for _, perm := range permissions {
-		if !permission.HasPermissionRaw(sum, perm) {
+		if !permission.HasPermissionRaw(uint64(u1), perm) {
 			hasPermission = false
 			break
 		}
@@ -34,15 +37,18 @@ func HasPermissions(retriever Retriever, guildId, userId uint64, permissions ...
 	if err != nil {
 		return false
 	}
+	
+	u := uint16(sum)
+	u1 := uint64(u)
 
-	if permission.HasPermissionRaw(sum, permission.Administrator) {
+	if permission.HasPermissionRaw(uint64(u1), permission.Administrator) {
 		return true
 	}
 
 	hasPermission := true
 
 	for _, perm := range permissions {
-		if !permission.HasPermissionRaw(sum, perm) {
+		if !permission.HasPermissionRaw(uint64(u1), perm) {
 			hasPermission = false
 			break
 		}
@@ -58,9 +64,11 @@ func GetAllPermissionsChannel(retriever Retriever, guildId, userId, channelId ui
 	if err != nil {
 		return permissions
 	}
+	u := uint16(sum)
+	u1 := uint64(u)
 
 	for _, perm := range permission.AllPermissions {
-		if permission.HasPermissionRaw(sum, perm) {
+		if permission.HasPermissionRaw(uint64(u1), perm) {
 			permissions = append(permissions, perm)
 		}
 	}
@@ -75,9 +83,12 @@ func GetAllPermissions(retriever Retriever, guildId, userId uint64) []permission
 	if err != nil {
 		return permissions
 	}
+	
+	u := uint16(sum)
+	u1 := uint64(u)
 
 	for _, perm := range permission.AllPermissions {
-		if permission.HasPermissionRaw(sum, perm) {
+		if permission.HasPermissionRaw(uint64(u1), perm) {
 			permissions = append(permissions, perm)
 		}
 	}
