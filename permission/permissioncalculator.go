@@ -1,3 +1,4 @@
+
 package permission
 
 import (
@@ -8,6 +9,8 @@ import (
 )
 
 func HasPermissionsChannel(retriever Retriever, guildId, userId, channelId uint64, permissions ...permission.Permission) bool {
+	sum := uint64()
+	
 	sum, err := GetEffectivePermissionsChannel(retriever, guildId, userId, channelId)
 	if err != nil {
 		return false
@@ -24,7 +27,7 @@ func HasPermissionsChannel(retriever Retriever, guildId, userId, channelId uint6
 	hasPermission := true
 
 	for _, perm := range permissions {
-		if !permission.HasPermissionRaw(uint64(u1), perm) {
+		if !permission.HasPermissionRaw(u1, perm) {
 			hasPermission = false
 			break
 		}
@@ -34,6 +37,8 @@ func HasPermissionsChannel(retriever Retriever, guildId, userId, channelId uint6
 }
 
 func HasPermissions(retriever Retriever, guildId, userId uint64, permissions ...permission.Permission) bool {
+	sum := uint64()
+	
 	sum, err := GetEffectivePermissions(retriever, guildId, userId)
 	if err != nil {
 		return false
@@ -50,7 +55,7 @@ func HasPermissions(retriever Retriever, guildId, userId uint64, permissions ...
 	hasPermission := true
 
 	for _, perm := range permissions {
-		if !permission.HasPermissionRaw(uint64(u1), perm) {
+		if !permission.HasPermissionRaw(u1, perm) {
 			hasPermission = false
 			break
 		}
@@ -61,15 +66,17 @@ func HasPermissions(retriever Retriever, guildId, userId uint64, permissions ...
 
 func GetAllPermissionsChannel(retriever Retriever, guildId, userId, channelId uint64) []permission.Permission {
 	permissions := make([]permission.Permission, 0)
-
+	
+	sum := uint64()
+	
 	sum, err := GetEffectivePermissionsChannel(retriever, guildId, userId, channelId)
 	if err != nil {
 		return permissions
 	}
 	
 	m := int64(sum)
-	u := uint16(m)
-	u1 := uint64(u)
+        u := uint16(m)
+        u1 := uint64(u)
 
 	for _, perm := range permission.AllPermissions {
 		if permission.HasPermissionRaw(u1, perm) {
@@ -83,6 +90,8 @@ func GetAllPermissionsChannel(retriever Retriever, guildId, userId, channelId ui
 func GetAllPermissions(retriever Retriever, guildId, userId uint64) []permission.Permission {
 	permissions := make([]permission.Permission, 0)
 
+	sum := uint64()
+	
 	sum, err := GetEffectivePermissions(retriever, guildId, userId)
 	if err != nil {
 		return permissions
@@ -101,7 +110,7 @@ func GetAllPermissions(retriever Retriever, guildId, userId uint64) []permission
 	return permissions
 }
 
-func GetEffectivePermissionsChannel(retriever Retriever, guildId, userId, channelId uint64) (int, error) {
+func GetEffectivePermissionsChannel(retriever Retriever, guildId, userId, channelId uint64) (uint64, error) {
 	permissions, err := GetBasePermissions(retriever, guildId)
 	if err != nil {
 		return 0, err
@@ -130,7 +139,7 @@ func GetEffectivePermissionsChannel(retriever Retriever, guildId, userId, channe
 	return permissions, nil
 }
 
-func GetEffectivePermissions(retriever Retriever, guildId, userId uint64) (int, error) {
+func GetEffectivePermissions(retriever Retriever, guildId, userId uint64) (uint64, error) {
 	permissions, err := GetBasePermissions(retriever, guildId)
 	if err != nil {
 		return 0, err
@@ -144,7 +153,7 @@ func GetEffectivePermissions(retriever Retriever, guildId, userId uint64) (int, 
 	return permissions, nil
 }
 
-func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, initialPermissions int) (int, error) {
+func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, initialPermissions uint64) (uint64, error) {
 	ch, err := retriever.GetChannel(channelId)
 	if err != nil {
 		return 0, err
@@ -160,7 +169,7 @@ func GetChannelMemberPermissions(retriever Retriever, userId, channelId uint64, 
 	return initialPermissions, nil
 }
 
-func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channelId uint64, initialPermissions int) (int, error) {
+func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channelId uint64, initialPermissions uint64) (uint64, error) {
 	member, err := retriever.GetGuildMember(guildId, userId)
 	if err != nil {
 		return 0, err
@@ -176,7 +185,7 @@ func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channe
 		return 0, err
 	}
 
-	allow, deny := 0, 0
+	var allow, deny uint64
 
 	for _, memberRole := range member.Roles {
 		for _, role := range roles {
@@ -198,7 +207,7 @@ func GetChannelTotalRolePermissions(retriever Retriever, guildId, userId, channe
 	return initialPermissions, nil
 }
 
-func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, initialPermissions int) (int, error) {
+func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, initialPermissions uint64) (uint64, error) {
 	roles, err := retriever.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
@@ -232,7 +241,7 @@ func GetChannelBasePermissions(retriever Retriever, guildId, channelId uint64, i
 	return initialPermissions, nil
 }
 
-func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, initialPermissions int) (int, error) {
+func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, initialPermissions uint64) (uint64, error) {
 	member, err := retriever.GetGuildMember(guildId, userId)
 	if err != nil {
 		return 0, err
@@ -254,7 +263,7 @@ func GetGuildTotalRolePermissions(retriever Retriever, guildId, userId uint64, i
 	return initialPermissions, nil
 }
 
-func GetBasePermissions(retriever Retriever, guildId uint64) (int, error) {
+func GetBasePermissions(retriever Retriever, guildId uint64) (uint64, error) {
 	roles, err := retriever.GetGuildRoles(guildId)
 	if err != nil {
 		return 0, err
