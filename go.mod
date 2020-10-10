@@ -1,4 +1,4 @@
-module github.com/TicketsBot/common
+module github.com/timnboys/common
 
 go 1.14
 
